@@ -1,0 +1,3 @@
+email = projeto.anuncios.ja@gmail.com
+secret = xtr2M!8kAy_W5YbS
+user: anunciosja
