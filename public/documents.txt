@@ -1,0 +1,5 @@
+email = projeto.anuncios.ja@gmail.com
+secret = xtr2M!8kAy_W5YbS
+user: anunciosja
+
+fb_token:EAAIE5zmjc4UBAGsmMg9tgRYPZBLxXV5xBKOeYJZC4loZAiQGenxJL2fE5qGnuFJb3RexZA07YtH6AFIuaxBfLeZAjogSAoQsxQmc8ZC21Osc7I6zNNZCV6DktWFkW4hFoRUTmhj5zgMTi8Iv999AW8zl8yfmUdDOu8rc1pTcNpVj9xKkZADCjI4ZAoDjOVfLTdifDEPsXihJLxLnUOnm7C5C1ljpRNAKAlXOlDfYZCRYQuUAZDZD
