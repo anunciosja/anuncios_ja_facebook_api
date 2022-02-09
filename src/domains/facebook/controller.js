@@ -11,8 +11,12 @@ const {
   AnuncioServico,
   AnuncioArquivo,
   ServiceLogs,
+  VeiculoCombustivel,
+  VeiculoFotos,
+  Veiculo,
 } = require("./../../models");
 const moment = require("moment");
+const crypto = require("crypto");
 
 const publicar = async (req, res) => {
   try {
@@ -25,9 +29,13 @@ const publicar = async (req, res) => {
 
     const anuncios = await Anuncio.findAll({
       where: {
-        data_hora: data_atual.format("YYYY/MM/DD HH:mm"),
+        data_hora: { [Op.lte]: data_atual.format("YYYY/MM/DD HH:mm") },
+        uid: null,
+        id_cliente: 3,
       },
     });
+
+    let _anuncios_uid = [];
 
     await Promise.all(
       anuncios.map(async (anuncio) => {
@@ -38,9 +46,9 @@ const publicar = async (req, res) => {
           },
         });
 
-        const arquivos = await AnuncioArquivo.findAll({
+        const arquivos = await VeiculoFotos.findAll({
           where: {
-            id_anuncio: anuncio.id,
+            id_veiculo: anuncio.id_veiculo,
           },
         });
 
@@ -91,17 +99,34 @@ const publicar = async (req, res) => {
 
               const { id } = response.data;
 
-              await AnuncioArquivo.update(
+              await VeiculoFotos.update(
                 { uid: id },
-                { where: { id: arquivo.id } }
+                { where: { id: arquivo.id_veiculo } }
               );
 
               file_ids.push(id);
             })
           );
 
+          const veiculo = await Veiculo.findOne({
+            where: { id: anuncio.id_veiculo },
+          });
+
+          const combustivel = await VeiculoCombustivel.findAll({
+            where: { id_veiculo: veiculo.id },
+          });
+
           let params = {
-            message: anuncio.texto,
+            message: `Marca: ${veiculo.marca}\nModelo: ${
+              veiculo.modelo
+            }\nAno: ${veiculo.ano}\nMotor: ${veiculo.motor}\nQuilometragem: ${
+              veiculo.quilometragem
+            }\nCombustível: ${combustivel
+              .map((m) => m.combustivel)
+              .join(", ")}\nValor: ${new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "BRL",
+            }).format(veiculo.valor)}\n${veiculo.descricao}`,
           };
 
           const medias = file_ids.map((_id, index) => {
@@ -117,9 +142,10 @@ const publicar = async (req, res) => {
           params.attached_media = medias;
 
           response = await axios.post(url, params);
+          const id_post = response.data.id;
 
-          await Anuncio.update(
-            { uid: response.data.id },
+          const updt = await Anuncio.update(
+            { uid: id_post },
             { where: { id: anuncio.id } }
           );
         }
@@ -258,8 +284,105 @@ const get_likes = async (req, res) => {
     return;
   }
 };
+
+const delete_posts = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const data_atual = moment();
+
+    const anuncios = await Anuncio.findAll({
+      where: {
+        id_veiculo: id,
+      },
+    });
+
+    await Promise.all(
+      anuncios.map(async (anuncio) => {
+        const isFacebook = await AnuncioServico.findOne({
+          where: {
+            id_anuncio: anuncio.id,
+            id_servico: 1,
+          },
+        });
+
+        if (isFacebook) {
+          const credenciais = await Credenciais.findAll({
+            where: {
+              id_cliente: anuncio.id_cliente,
+              id_servico: 1,
+            },
+          });
+
+          const user_access_token = credenciais.find(
+            (f) => f.chave === "FACEBOOK_ACCESS_TOKEN"
+          );
+          const page_id = credenciais.find((f) => f.chave === "FACEBOOK_PAGE");
+
+          const url_page_token = `https://graph.facebook.com/v13.0/${
+            page_id.valor.split("@")[0]
+          }?fields=access_token`;
+
+          let response = await axios.get(url_page_token, {
+            params: {
+              access_token: user_access_token.valor,
+            },
+          });
+
+          const access_token = response.data.access_token;
+          // const access_token = user_access_token.valor;
+          try {
+            const url_delete_post = `https://graph.facebook.com/v13.0/${anuncio.uid}/`;
+
+            response = await axios.delete(url_delete_post, {
+              params: {
+                access_token:
+                  "568341104391045|fbb88c21b60b5adc644cfb7c81792e3a",
+                //access_token,
+              },
+            });
+          } catch (error) {
+            await ServiceLogs.create({
+              descricao: `Erro de exclusão de postagem :${error?.response?.data?.error?.message}`,
+              servico: 1,
+            });
+          }
+
+          // fb.options({
+          //   version: "13.0",
+          //   appId: "568341104391045",
+          //   appSecret: "fbb88c21b60b5adc644cfb7c81792e3a",
+          //   accessToken: access_token,
+          // });
+
+          // fb.api(`${anuncio.uid}`, "delete", async (res) => {
+          //   if (!res || res.error) {
+          //     return;
+          //   }
+
+          await Anuncio.destroy({ where: { id: anuncio.id } });
+          // });
+        }
+      })
+    );
+
+    await VeiculoCombustivel.destroy({ where: { id_veiculo: id } });
+    await VeiculoFotos.destroy({ where: { id_veiculo: id } });
+    await Veiculo.destroy({ where: { id: id } });
+
+    res.send("ok");
+    return;
+  } catch (error) {
+    console.log(error.message);
+    console.log(error?.response?.data?.error);
+    res.status(500).send({ error: error.message });
+    return;
+  }
+};
+
 module.exports = {
   publicar,
   receive_access_token,
   get_facebook_pages,
+  delete_posts,
 };

@@ -45,6 +45,7 @@ app.use(express.static(__dirname + "/public"));
 app.use("/api/public", express.static(__dirname + "/public"));
 
 app.use("/api/facebook", require("./src/domains/facebook/routes"));
+app.use("/api/olx", require("./src/domains/olx/routes"));
 
 //funcao main
 function main() {
@@ -63,7 +64,7 @@ function main() {
   cron.schedule(
     "* 10 * * *",
     async () => {
-      const resp = await axios.get("http://localhost:8188/api/facebook");
+      const resp = await axios.get("http://localhost:8189/api/olx");
     },
     {
       scheduled: true,

@@ -12,7 +12,13 @@ let sequelize = new Sequelize(
   process.env.DB_PWD,
   {
     host: process.env.DB_SERVER,
-    dialect: "mssql",
+    dialect: "postgres",
+    pool: {
+      max: 20,
+      min: 0,
+      acquire: 60000,
+      idle: 10000,
+    },
     dialectOptions: {
       options: {
         encrypt: false,

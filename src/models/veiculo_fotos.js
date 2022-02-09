@@ -1,8 +1,8 @@
 "use strict";
 
 module.exports = (sequelize, DataTypes) => {
-  const Credenciais = sequelize.define(
-    "Credenciais",
+  const VeiculoFotos = sequelize.define(
+    "VeiculoFotos",
     {
       id: {
         type: DataTypes.INTEGER,
@@ -10,33 +10,36 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      id_servico: {
+      id_veiculo: {
         type: DataTypes.INTEGER,
-        field: "id_servico",
+        field: "id_veiculo",
       },
-      id_cliente: {
-        type: DataTypes.INTEGER,
-        field: "id_cliente",
-      },
-      chave: {
+      arquivo: {
         type: DataTypes.STRING,
-        field: "chave",
+        field: "arquivo",
       },
-      valor: {
+      type: {
         type: DataTypes.STRING,
-        field: "valor",
+        field: "type",
       },
-      validade: {
+      uid: {
         type: DataTypes.STRING,
-        field: "validade",
+        field: "uid",
       },
     },
     {
-      tableName: "credenciais",
+      tableName: "veiculo_fotos",
       createdAt: false,
       updatedAt: false,
     }
   );
 
-  return Credenciais;
+  VeiculoFotos.associate = (models) => {
+    models.VeiculoFotos.belongsTo(models.Veiculo, {
+      as: "veiculo",
+      foreignKey: "id",
+    });
+  };
+
+  return VeiculoFotos;
 };

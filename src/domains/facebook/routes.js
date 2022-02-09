@@ -9,5 +9,6 @@ const controller = require("./controller");
 router.get("/", controller.publicar);
 router.get("/fb_access_token/:id", controller.receive_access_token);
 router.get("/fb_pages/:id", [checkJwt], controller.get_facebook_pages);
+router.delete("/fb_posts/:id", [checkJwt], controller.delete_posts);
 
 module.exports = router;
