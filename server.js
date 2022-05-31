@@ -26,6 +26,8 @@ require("dotenv").config();
 const { sequelize } = require("./src/models/index");
 const SQL = require("mssql");
 const bodyParser = require("body-parser");
+const cron = require("node-cron");
+const { default: axios } = require("axios");
 
 //routes
 app.use(cors());
@@ -37,11 +39,13 @@ app.use(
     createParentPath: true,
   })
 );
+
 app.use(express.static(__dirname + "/public"));
 
 app.use("/api/public", express.static(__dirname + "/public"));
 
 app.use("/api/facebook", require("./src/domains/facebook/routes"));
+app.use("/api/olx", require("./src/domains/olx/routes"));
 
 //funcao main
 function main() {
@@ -56,6 +60,17 @@ function main() {
       console.error("Unable to connect to the database: ", error);
     }
   });
+
+  cron.schedule(
+    "* 10 * * *",
+    async () => {
+      const resp = await axios.get("http://localhost:8189/api/olx");
+    },
+    {
+      scheduled: true,
+      timezone: "America/Sao_Paulo",
+    }
+  );
 }
 
 process.on("unhandledRejection", (err) => {
